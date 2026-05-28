@@ -108,3 +108,5 @@ export interface TranscriptSegmentData {
   text: string;
   confidence?: number;
 }
+
+export * from './tts';

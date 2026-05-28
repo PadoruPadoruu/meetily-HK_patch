@@ -39,3 +39,9 @@ graph TD
 *   **Transcription Engine:** Uses local speech-to-text models (Whisper or Parakeet) to transcribe the captured audio. It can be accelerated with a GPU.
 *   **Database:** A local SQLite database that stores meeting metadata, transcripts, and summaries.
 *   **Summary Engine:** Generates meeting summaries using various Large Language Models (LLMs), including local models via Ollama.
+
+### (Planned) Text-to-Speech Engine
+
+*   **TTS Session Pipeline:** Future text-to-speech support for reading summaries or notes aloud.
+*   **Language Roadmap:** Cantonese and Mandarin are required, with Korean and Japanese planned next.
+*   See `docs/tts.md` for the session structure and language extension guide.
