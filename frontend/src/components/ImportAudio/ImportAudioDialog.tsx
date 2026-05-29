@@ -35,7 +35,13 @@ import { useConfig } from '@/contexts/ConfigContext';
 import { useImportAudio, ImportResult } from '@/hooks/useImportAudio';
 import { useRouter } from 'next/navigation';
 import { useSidebar } from '../Sidebar/SidebarProvider';
-import { LANGUAGES } from '@/constants/languages';
+import {
+  DEFAULT_TRANSCRIPTION_LANGUAGE,
+  TranscriptionProvider,
+  getTranscriptionLanguagesForProvider,
+  normalizeTranscriptionLanguage,
+  resolveTranscriptionLanguage,
+} from '@/constants/languages';
 import { useTranscriptionModels, ModelOption } from '@/hooks/useTranscriptionModels';
 
 
@@ -75,7 +81,9 @@ export function ImportAudioDialog({
   const { selectedLanguage, transcriptModelConfig } = useConfig();
 
   const [title, setTitle] = useState('');
-  const [selectedLang, setSelectedLang] = useState(selectedLanguage || 'auto');
+  const [selectedLang, setSelectedLang] = useState(
+    normalizeTranscriptionLanguage(selectedLanguage || DEFAULT_TRANSCRIPTION_LANGUAGE)
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [titleModifiedByUser, setTitleModifiedByUser] = useState(false);
 
@@ -137,7 +145,9 @@ export function ImportAudioDialog({
       resetSelection();
       setTitle('');
       setTitleModifiedByUser(false);
-      setSelectedLang(selectedLanguage || 'auto');
+      setSelectedLang(
+        normalizeTranscriptionLanguage(selectedLanguage || DEFAULT_TRANSCRIPTION_LANGUAGE)
+      );
       setShowAdvanced(false);
 
       // Validate preselected file if provided
@@ -170,6 +180,15 @@ export function ImportAudioDialog({
     return availableModels.find((m) => m.provider === provider && m.name === name);
   }, [selectedModelKey, availableModels]);
   const isParakeetModel = selectedModel?.provider === 'parakeet';
+  const languageProvider = useMemo<TranscriptionProvider | undefined>(() => {
+    if (selectedModel?.provider === 'whisper') return 'localWhisper';
+    if (selectedModel?.provider === 'parakeet') return 'parakeet';
+    return undefined;
+  }, [selectedModel?.provider]);
+  const languageOptions = useMemo(
+    () => getTranscriptionLanguagesForProvider(languageProvider),
+    [languageProvider]
+  );
 
   useEffect(() => {
     if (isParakeetModel && selectedLang !== 'auto') {
@@ -186,11 +205,14 @@ export function ImportAudioDialog({
 
   const handleStartImport = async () => {
     if (!fileInfo) return;
+    const resolvedLanguage = isParakeetModel
+      ? null
+      : resolveTranscriptionLanguage(selectedLang, languageProvider);
 
     await startImport(
       fileInfo.path,
       title || fileInfo.filename,
-      isParakeetModel ? null : selectedLang === 'auto' ? null : selectedLang,
+      resolvedLanguage,
       selectedModel?.name || null,
       selectedModel?.provider || null
     );
@@ -354,7 +376,7 @@ export function ImportAudioDialog({
                               <SelectValue placeholder="Select language" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
-                              {LANGUAGES.map((lang) => (
+                              {languageOptions.map((lang) => (
                                 <SelectItem key={lang.code} value={lang.code}>
                                   {lang.name}
                                 </SelectItem>
